@@ -329,6 +329,31 @@ function setupIpcHandlers() {
         }
     });
 
+    ipcMain.handle('api-get-linked-task', async (event, assetId: string) => {
+        try {
+            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
+            const response = await fetch(`${apiUrl}/asset-task-links/${assetId}`);
+            if (response.status === 404) return { success: true, data: null };
+            const data = await response.json();
+            return { success: response.ok, data, status: response.status };
+        } catch (error: any) {
+            console.error('API getLinkedTask error:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('api-get-task', async (event, taskId: string) => {
+        try {
+            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
+            const response = await fetch(`${apiUrl}/get-task/${taskId}`);
+            const data = await response.json();
+            return { success: response.ok, data, status: response.status };
+        } catch (error: any) {
+            console.error('API getTask error:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
     ipcMain.handle('api-get-linked-assets', async (event, taskId: string) => {
         try {
             const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
@@ -337,6 +362,20 @@ function setupIpcHandlers() {
             return { success: response.ok, data, status: response.status };
         } catch (error: any) {
             console.error('API getLinkedAssets error:', error);
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('api-delete-linked-asset', async (event, assetId: string) => {
+        try {
+            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
+            const response = await fetch(`${apiUrl}/asset-task-links/${assetId}`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+            return { success: response.ok, data, status: response.status };
+        } catch (error: any) {
+            console.error('API deleteLinkedAsset error:', error);
             return { success: false, error: error.message };
         }
     });
@@ -493,17 +532,7 @@ function setupIpcHandlers() {
         }
     });
 
-    ipcMain.handle('api-get-task', async (event, taskId: string) => {
-        try {
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
-            const response = await fetch(`${apiUrl}/get-task/${taskId}`);
-            const data = await response.json();
-            return { success: response.ok, data, status: response.status };
-        } catch (error: any) {
-            console.error('API get-task error:', error);
-            return { success: false, error: error.message };
-        }
-    });
+
 
     ipcMain.handle('api-delete-snapshot', async (event, { taskId, commitId }: { taskId: string, commitId: string }) => {
         try {
