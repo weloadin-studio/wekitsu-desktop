@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, shell, Menu, nativeImage, dialog } from "electron";
+import type { BrowserWindow as BrowserWindowType } from "electron";
+const { app, BrowserWindow, ipcMain, shell, Menu, nativeImage, dialog } = require("electron");
 import path from "path";
 import fs from "fs";
 import { autoUpdater } from "electron-updater";
@@ -23,8 +24,8 @@ const store = new Store({ name: 'wekitsu-settings', projectName: 'wekitsu-deskto
 // });
 
 const isDev = !app.isPackaged;
-let mainWindow: BrowserWindow | null = null;
-let settingsWindow: BrowserWindow | null = null;
+let mainWindow: BrowserWindowType | null = null;
+let settingsWindow: BrowserWindowType | null = null;
 
 // Use the wekitsu logo for tray and window icon
 const iconUrl = path.join(__dirname, '../icon.png');
@@ -141,6 +142,7 @@ function setupIpcHandlers() {
     });
 
     ipcMain.handle('link-to-workspace', async (event, payload: { taskId: string, relativePath: string }) => {
+        console.log(`[Desktop IPC] link-to-workspace called for Task: ${payload.taskId} -> ${payload.relativePath}`);
         const workspaceDir = store.get("workspacePath") as string | undefined;
 
         if (!workspaceDir) {
@@ -149,7 +151,7 @@ function setupIpcHandlers() {
 
         const destPath = path.join(workspaceDir, payload.relativePath);
 
-        let progressWindow: BrowserWindow | null = new BrowserWindow({
+        let progressWindow: BrowserWindowType | null = new BrowserWindow({
             width: 400,
             height: 120,
             frame: false,
@@ -239,15 +241,17 @@ function setupIpcHandlers() {
             linkedTasks[payload.taskId] = payload.relativePath;
             store.set("linkedTasks", linkedTasks);
 
+            console.log(`[Desktop IPC] link-to-workspace completed successfully for Task: ${payload.taskId}`);
             return { success: true };
         } catch (error: any) {
-            console.error("Error linking to workspace:", error);
+            console.error(`[Desktop IPC] Error linking to workspace for Task ${payload.taskId}:`, error);
             if (progressWindow && !progressWindow.isDestroyed()) { progressWindow.close(); progressWindow = null; }
             return { success: false, error: error.message };
         }
     });
 
     ipcMain.handle('unlink-from-workspace', async (event, payload: { taskId: string, relativePath: string }) => {
+        console.log(`[Desktop IPC] unlink-from-workspace called for Task: ${payload.taskId} -> ${payload.relativePath}`);
         const workspaceDir = store.get("workspacePath") as string | undefined;
 
         if (!workspaceDir) {
@@ -287,14 +291,16 @@ function setupIpcHandlers() {
             delete linkedTasks[payload.taskId];
             store.set("linkedTasks", linkedTasks);
 
+            console.log(`[Desktop IPC] unlink-from-workspace completed successfully for Task: ${payload.taskId}`);
             return { success: true };
         } catch (error: any) {
-            console.error("Error unlinking from workspace:", error);
+            console.error(`[Desktop IPC] Error unlinking from workspace for Task ${payload.taskId}:`, error);
             return { success: false, error: error.message };
         }
     });
 
     ipcMain.handle('api-create-asset', async (event, payload: any) => {
+        console.log(`[Desktop IPC] api-create-asset called. Payload:`, payload);
         try {
             const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
             const response = await fetch(`${apiUrl}/createAsset`, {
@@ -303,14 +309,16 @@ function setupIpcHandlers() {
                 body: JSON.stringify(payload)
             });
             const data = await response.json();
+            console.log(`[Desktop IPC] api-create-asset responded with status: ${response.status}`);
             return { success: response.ok, data, status: response.status };
         } catch (error: any) {
-            console.error('API createAsset error:', error);
+            console.error('[Desktop IPC] API createAsset error:', error);
             return { success: false, error: error.message };
         }
     });
 
     ipcMain.handle('api-link-asset-task', async (event, payload: { assetId: string, taskId: string }) => {
+        console.log(`[Desktop IPC] api-link-asset-task called for Asset: ${payload.assetId} -> Task: ${payload.taskId}`);
         try {
             const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
             const response = await fetch(`${apiUrl}/asset-task-links`, {
@@ -319,9 +327,10 @@ function setupIpcHandlers() {
                 body: JSON.stringify(payload)
             });
             const data = await response.json();
+            console.log(`[Desktop IPC] api-link-asset-task responded with status: ${response.status}`);
             return { success: response.ok, data, status: response.status };
         } catch (error: any) {
-            console.error('API linkAssetTask error:', error);
+            console.error('[Desktop IPC] API linkAssetTask error:', error);
             return { success: false, error: error.message };
         }
     });
@@ -438,6 +447,8 @@ function setupIpcHandlers() {
         taskId: string, type: string, message: string, username?: string, userId?: string, bypassZip?: boolean,
         thumbnailPath?: string, previewPath?: string
     }) => {
+        console.log(`[Desktop IPC] api-snapshot called for Task: ${payload.taskId}, Type: ${payload.type}`);
+        console.log(`[Desktop IPC] Snapshot message: "${payload.message}" | bypassZip: ${payload.bypassZip}`);
         try {
             const formData = new FormData();
             formData.append('taskId', payload.taskId);
@@ -447,16 +458,19 @@ function setupIpcHandlers() {
             if (payload.userId) formData.append('userId', payload.userId);
             if (payload.bypassZip !== undefined) formData.append('bypassZip', payload.bypassZip.toString());
 
+            // ... (rest of form data appending) ...
             // Bypass API processing since we already did it locally
             formData.append('bypassProcessing', 'true');
 
             if (payload.thumbnailPath && fs.existsSync(payload.thumbnailPath)) {
+                console.log(`[Desktop IPC]   -> Adding thumbnail to stream`);
                 const buffer = await fs.promises.readFile(payload.thumbnailPath);
                 const file = new File([buffer], 'thumbnail.png', { type: 'image/png' });
                 formData.append('thumbnail', file);
             }
 
             if (payload.previewPath && fs.existsSync(payload.previewPath)) {
+                console.log(`[Desktop IPC]   -> Adding preview video to stream`);
                 const buffer = await fs.promises.readFile(payload.previewPath);
                 const file = new File([buffer], 'preview.mp4', { type: 'video/mp4' });
                 formData.append('preview', file);
@@ -471,6 +485,7 @@ function setupIpcHandlers() {
                 if (workspacePath && relativePath) {
                     const targetDir = path.join(workspacePath, relativePath, payload.type);
                     if (fs.existsSync(targetDir)) {
+                        console.log(`[Desktop IPC]   -> Bundling workspace folder: ${targetDir}`);
                         tempZipPath = path.join(app.getPath('temp'), `snapshot-${Date.now()}.zip`);
 
                         await new Promise<void>((resolve, reject) => {
@@ -488,10 +503,12 @@ function setupIpcHandlers() {
                         const buffer = await fs.promises.readFile(tempZipPath);
                         const file = new File([buffer], 'contents.zip', { type: 'application/zip' });
                         formData.append('contentsZip', file);
+                        console.log(`[Desktop IPC]   -> Bundle created successfully`);
                     }
                 }
             }
 
+            console.log(`[Desktop IPC] Sending payload to remote Wekitsu API...`);
             const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
             const response = await fetch(`${apiUrl}/snapshot`, {
                 method: 'POST',
@@ -510,9 +527,10 @@ function setupIpcHandlers() {
                 await fs.promises.unlink(tempZipPath).catch(() => { });
             }
 
+            console.log(`[Desktop IPC] api-snapshot responded with status: ${response.status}`);
             return { success: response.ok, data, status: response.status };
         } catch (error: any) {
-            console.error('API snapshot error:', error);
+            console.error('[Desktop IPC] API snapshot error:', error);
             return { success: false, error: error.message };
         }
     });
@@ -552,6 +570,7 @@ function setupIpcHandlers() {
 
 
     ipcMain.handle('api-rollback-snapshot', async (event, { taskId, commitId }: { taskId: string, commitId: string }) => {
+        console.log(`[Desktop IPC] api-rollback-snapshot called for Task: ${taskId}, Commit: ${commitId}`);
         try {
             const workspacePath = store.get("workspacePath") as string | undefined;
             const linkedTasks = store.get("linkedTasks", {}) as Record<string, string>;
@@ -580,10 +599,12 @@ function setupIpcHandlers() {
                     : await dialog.showMessageBox(dialogOpts);
 
                 if (response !== 0) {
+                    console.log(`[Desktop IPC] Rollback cancelled by user for Task: ${taskId}`);
                     return { success: false, cancelled: true };
                 }
             }
 
+            console.log(`[Desktop IPC] Sending rollback request to Wekitsu API for commit: ${commitId}`);
             const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
 
             // Determine snapshot type to properly extract it at the local path
@@ -598,13 +619,14 @@ function setupIpcHandlers() {
                     }
                 }
             } catch (e) {
-                console.error("Failed to fetch snapshot details for type", e);
+                console.error("[Desktop IPC] Failed to fetch snapshot details for type", e);
             }
 
             const response = await fetch(`${apiUrl}/snapshots/${taskId}/${commitId}/rollback`, {
                 method: 'POST'
             });
             const data = await response.json();
+            console.log(`[Desktop IPC] api-rollback-snapshot responded with status: ${response.status}`);
 
             if (response.ok && workspacePath && relativePath) {
                 const extract = require('extract-zip');
@@ -612,14 +634,16 @@ function setupIpcHandlers() {
 
                 try {
                     if (fs.existsSync(targetWorkspaceDir)) {
+                        console.log(`[Desktop IPC] Deleting local target workspace dir: ${targetWorkspaceDir}`);
                         await fs.promises.rm(targetWorkspaceDir, { recursive: true, force: true });
                     }
                     await fs.promises.mkdir(targetWorkspaceDir, { recursive: true });
                 } catch (e) {
-                    console.error("Failed to clear local workspace directory", e);
+                    console.error("[Desktop IPC] Failed to clear local workspace directory", e);
                 }
 
                 try {
+                    console.log(`[Desktop IPC] Fetching contents zip for extraction...`);
                     const zipUrl = `${apiUrl}/assets/${taskId}/${commitId}/contents.zip`;
                     const zipRes = await fetch(zipUrl);
 
@@ -629,17 +653,19 @@ function setupIpcHandlers() {
                         const tempZipPath = path.join(app.getPath('temp'), `contents-${snapType}-${taskId}-${Date.now()}.zip`);
                         await fs.promises.writeFile(tempZipPath, buffer);
 
+                        console.log(`[Desktop IPC] Zip fetched, extracting to: ${targetWorkspaceDir}`);
                         await extract(tempZipPath, { dir: targetWorkspaceDir });
                         await fs.promises.unlink(tempZipPath);
+                        console.log(`[Desktop IPC] Rollback zip extraction complete.`);
                     }
                 } catch (e) {
-                    console.error("Failed to extract contents locally", e);
+                    console.error("[Desktop IPC] Failed to extract contents locally", e);
                 }
             }
 
             return { success: response.ok, data, status: response.status };
         } catch (error: any) {
-            console.error('API rollback-snapshot error:', error);
+            console.error('[Desktop IPC] API rollback-snapshot error:', error);
             return { success: false, error: error.message };
         }
     });
@@ -692,7 +718,8 @@ function createWindow() {
     mainWindow.setMenuBarVisibility(true);
 
     mainWindow.webContents.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-    mainWindow.loadURL("http://localhost:8080");
+    // mainWindow.loadURL("http://localhost:8080");
+    mainWindow.loadURL("https://wekitsu.weloadin.lol/");
     // mainWindow.loadURL("https://192.168.88.189:8080");
     // mainWindow.webContents.openDevTools();
 }
