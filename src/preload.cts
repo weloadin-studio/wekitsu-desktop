@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('versions', {
 contextBridge.exposeInMainWorld('electronAPI', {
     openExplorer: (path: string) => ipcRenderer.invoke('open-path', path),
     getSettings: () => ipcRenderer.invoke('get-settings'),
-    saveSettings: (settings: { workspacePath: string, remotePath: string }) => ipcRenderer.invoke('save-settings', settings),
+    saveSettings: (settings: { workspacePath: string }) => ipcRenderer.invoke('save-settings', settings),
     selectDirectory: () => ipcRenderer.invoke('select-directory'),
     checkWorkspacePath: (relativePath: string) => ipcRenderer.invoke('check-path-exists', relativePath),
     linkToWorkspace: (taskId: string, relativePath: string) => ipcRenderer.invoke('link-to-workspace', { taskId, relativePath }),

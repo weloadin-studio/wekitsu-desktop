@@ -15,7 +15,7 @@ if (ffmpegStatic) {
 const isPackaged = process.mainModule?.filename.indexOf('app.asar') !== -1;
 dotenv.config({ path: isPackaged ? path.join(process.resourcesPath, '.env') : path.join(__dirname, '../.env') });
 
-const store = new Store();
+const store = new Store({ name: 'wekitsu-settings', projectName: 'wekitsu-desktop' } as any);
 
 // Connect the auto-updater to the main window for progress events if desired
 // autoUpdater.on('update-downloaded', () => {
@@ -62,9 +62,8 @@ if (!gotTheLock) {
 
 function checkSettingsAndStart() {
     const workspacePath = store.get("workspacePath") as string | undefined;
-    const remotePath = store.get("remotePath") as string | undefined;
 
-    if (workspacePath && remotePath) {
+    if (workspacePath) {
         if (!mainWindow) {
             createWindow();
         }
@@ -98,14 +97,12 @@ function setupIpcHandlers() {
 
     ipcMain.handle('get-settings', () => {
         return {
-            workspacePath: store.get("workspacePath") || "",
-            remotePath: store.get("remotePath") || ""
+            workspacePath: store.get("workspacePath") || ""
         };
     });
 
-    ipcMain.handle('save-settings', (event, settings: { workspacePath: string, remotePath: string }) => {
+    ipcMain.handle('save-settings', (event, settings: { workspacePath: string }) => {
         store.set("workspacePath", settings.workspacePath);
-        store.set("remotePath", settings.remotePath);
 
         if (settingsWindow) {
             settingsWindow.close();

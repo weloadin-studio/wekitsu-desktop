@@ -126,25 +126,14 @@
             </div>
             <div class="error" id="workspaceError">Workspace path is required</div>
         </div>
-        <div class="form-group">
-            <label for="remotePath">Remote Path</label>
-            <div class="input-group">
-                <input type="text" id="remotePath" placeholder="e.g. \\NAS\Remote">
-                <button type="button" class="browse-btn" id="browseRemoteBtn">Browse</button>
-            </div>
-            <div class="error" id="remoteError">Remote path is required</div>
-        </div>
         <button class="primary-btn" id="saveBtn">Save & Continue</button>
     </div>
 
     <script>
         const workspaceInput = document.getElementById('workspacePath');
-        const remoteInput = document.getElementById('remotePath');
         const browseWorkspaceBtn = document.getElementById('browseWorkspaceBtn');
-        const browseRemoteBtn = document.getElementById('browseRemoteBtn');
         const saveBtn = document.getElementById('saveBtn');
         const workspaceError = document.getElementById('workspaceError');
-        const remoteError = document.getElementById('remoteError');
 
         // Browse for directory
         async function handleBrowse(inputElement) {
@@ -159,14 +148,12 @@
         }
 
         browseWorkspaceBtn.addEventListener('click', () => handleBrowse(workspaceInput));
-        browseRemoteBtn.addEventListener('click', () => handleBrowse(remoteInput));
 
         // Load existing settings
         async function loadSettings() {
             try {
                 const settings = await window.electronAPI.getSettings();
                 if (settings.workspacePath) workspaceInput.value = settings.workspacePath;
-                if (settings.remotePath) remoteInput.value = settings.remotePath;
             } catch (err) {
                 console.error("Failed to load settings:", err);
             }
@@ -174,7 +161,6 @@
 
         saveBtn.addEventListener('click', async () => {
             const workspacePath = workspaceInput.value.trim();
-            const remotePath = remoteInput.value.trim();
 
             let hasError = false;
 
@@ -185,13 +171,6 @@
                 workspaceError.style.display = 'none';
             }
 
-            if (!remotePath) {
-                remoteError.style.display = 'block';
-                hasError = true;
-            } else {
-                remoteError.style.display = 'none';
-            }
-
             if (hasError) return;
 
             saveBtn.disabled = true;
@@ -199,8 +178,7 @@
 
             try {
                 await window.electronAPI.saveSettings({
-                    workspacePath,
-                    remotePath
+                    workspacePath
                 });
             } catch (err) {
                 console.error("Failed to save settings:", err);
