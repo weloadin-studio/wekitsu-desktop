@@ -18,10 +18,10 @@ dotenv.config({ path: isPackaged ? path.join(process.resourcesPath, '.env') : pa
 
 const store = new Store({ name: 'wekitsu-settings', projectName: 'wekitsu-desktop' } as any);
 
-// Connect the auto-updater to the main window for progress events if desired
-autoUpdater.on('update-downloaded', () => {
-    autoUpdater.quitAndInstall();
-});
+// We handle update flow interactively
+autoUpdater.autoDownload = false;
+let isCheckingForUpdate = false;
+let updateProgressWindow: BrowserWindowType | null = null;
 
 const isDev = !app.isPackaged;
 let mainWindow: BrowserWindowType | null = null;
@@ -49,13 +49,41 @@ if (!gotTheLock) {
         }
     });
 
+    // --- Forward Main Process Logs to DevTools ---
+    const originalLog = console.log;
+    const originalError = console.error;
+
+    function forwardToDevTools(type: 'log' | 'error', ...args: any[]) {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            try {
+                const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+                const safeMsg = msg.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+                mainWindow.webContents.executeJavaScript(`console.${type}("[Main Process] ${safeMsg}")`).catch(() => { });
+            } catch (e) { }
+        }
+    }
+
+    console.log = (...args) => {
+        originalLog(...args);
+        forwardToDevTools('log', ...args);
+    };
+
+    console.error = (...args) => {
+        originalError(...args);
+        forwardToDevTools('error', ...args);
+    };
+
     // Create myWindow, load the rest of the app, etc...
     app.whenReady().then(() => {
         setupIpcHandlers();
         createMenu();
 
+        // Setup interactive update handlers
+        setupAutoUpdaterHandlers();
+
         // precise "checkForUpdatesAndNotify" is good for default behavior
-        autoUpdater.checkForUpdatesAndNotify();
+        // (Removing default notify to rely on explicit checks via menu)
+        // autoUpdater.checkForUpdatesAndNotify();
 
         checkSettingsAndStart();
     });
@@ -71,6 +99,129 @@ function checkSettingsAndStart() {
     } else {
         createSettingsWindow();
     }
+}
+
+function setupAutoUpdaterHandlers() {
+    autoUpdater.on('checking-for-update', () => {
+        isCheckingForUpdate = true;
+    });
+
+    autoUpdater.on('update-available', async (info) => {
+        isCheckingForUpdate = false;
+        const targetWindow = mainWindow || settingsWindow;
+        if (!targetWindow) return;
+
+        const { response } = await dialog.showMessageBox(targetWindow, {
+            type: 'info',
+            title: 'Update Available',
+            message: `Version ${info.version} is available.`,
+            detail: 'Would you like to download it now?',
+            buttons: ['Download', 'Later'],
+            defaultId: 0
+        });
+
+        if (response === 0) {
+            // User clicked Download
+            createUpdateProgressWindow();
+            autoUpdater.downloadUpdate();
+        }
+    });
+
+    autoUpdater.on('update-not-available', () => {
+        if (isCheckingForUpdate) {
+            isCheckingForUpdate = false;
+            const targetWindow = mainWindow || settingsWindow;
+            if (targetWindow) {
+                dialog.showMessageBox(targetWindow, {
+                    type: 'info',
+                    title: 'No Updates',
+                    message: 'You are currently running the latest version.'
+                });
+            }
+        }
+    });
+
+    autoUpdater.on('error', (err) => {
+        isCheckingForUpdate = false;
+        if (updateProgressWindow && !updateProgressWindow.isDestroyed()) {
+            updateProgressWindow.close();
+            updateProgressWindow = null;
+        }
+
+        const targetWindow = mainWindow || settingsWindow;
+        if (targetWindow) {
+            dialog.showMessageBox(targetWindow, {
+                type: 'error',
+                title: 'Update Error',
+                message: 'An error occurred while checking for updates.',
+                detail: err == null ? "unknown error" : (err.stack || err).toString()
+            });
+        }
+    });
+
+    autoUpdater.on('download-progress', (progressObj) => {
+        const percent = Math.floor(progressObj.percent);
+        const downloadedBytes = (progressObj.transferred / 1024 / 1024).toFixed(2);
+        const totalBytes = (progressObj.total / 1024 / 1024).toFixed(2);
+
+        if (updateProgressWindow && !updateProgressWindow.isDestroyed()) {
+            updateProgressWindow.webContents.send('sync-progress', `Downloading... ${percent}% (${downloadedBytes} MB / ${totalBytes} MB)`);
+        }
+    });
+
+    autoUpdater.on('update-downloaded', async () => {
+        if (updateProgressWindow && !updateProgressWindow.isDestroyed()) {
+            updateProgressWindow.close();
+            updateProgressWindow = null;
+        }
+
+        const targetWindow = mainWindow || settingsWindow;
+        if (!targetWindow) {
+            // Safety fallback if closed out early
+            autoUpdater.quitAndInstall();
+            return;
+        }
+
+        const { response } = await dialog.showMessageBox(targetWindow, {
+            type: 'info',
+            title: 'Update Ready',
+            message: 'A new version has been downloaded.',
+            detail: 'Restart the application to apply the updates?',
+            buttons: ['Restart Now', 'Later'],
+            defaultId: 0
+        });
+
+        if (response === 0) {
+            autoUpdater.quitAndInstall();
+        }
+    });
+}
+
+function createUpdateProgressWindow() {
+    if (updateProgressWindow) return;
+
+    updateProgressWindow = new BrowserWindow({
+        width: 400,
+        height: 120,
+        frame: false,
+        parent: mainWindow || settingsWindow || undefined,
+        modal: !!(mainWindow || settingsWindow),
+        webPreferences: {
+            preload: path.join(__dirname, "preload.cjs"),
+            nodeIntegration: false,
+            contextIsolation: true
+        },
+        resizable: false,
+        alwaysOnTop: true,
+        show: false
+    });
+
+    updateProgressWindow.loadFile(path.join(__dirname, "sync-progress.html"));
+
+    updateProgressWindow.once('ready-to-show', () => {
+        updateProgressWindow?.show();
+        updateProgressWindow?.webContents.send('sync-progress', 'Connecting to updater server...');
+    });
 }
 
 function setupIpcHandlers() {
