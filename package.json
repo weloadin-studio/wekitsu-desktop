@@ -9,8 +9,8 @@
   "scripts": {
     "build": "tsc && node -e \"const fs=require('fs'); fs.copyFileSync('src/settings.html', 'dist/settings.html'); fs.copyFileSync('src/sync-progress.html', 'dist/sync-progress.html');\"",
     "start": "npm run build && electron .",
-    "dist": "npm run build && electron-builder",
-    "publish": "npm run build && electron-builder --publish always"
+    "dist": "npm run build && dotenv -- electron-builder",
+    "publish": "npm run build && dotenv -- electron-builder --publish always"
   },
   "build": {
     "appId": "com.gitink.wekitsu",

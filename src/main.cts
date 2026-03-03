@@ -19,9 +19,9 @@ dotenv.config({ path: isPackaged ? path.join(process.resourcesPath, '.env') : pa
 const store = new Store({ name: 'wekitsu-settings', projectName: 'wekitsu-desktop' } as any);
 
 // Connect the auto-updater to the main window for progress events if desired
-// autoUpdater.on('update-downloaded', () => {
-// autoUpdater.quitAndInstall(); 
-// });
+autoUpdater.on('update-downloaded', () => {
+    autoUpdater.quitAndInstall();
+});
 
 const isDev = !app.isPackaged;
 let mainWindow: BrowserWindowType | null = null;
@@ -756,6 +756,13 @@ function createMenu() {
         {
             label: 'Help',
             submenu: [
+                {
+                    label: 'Check for Updates',
+                    click: () => {
+                        autoUpdater.checkForUpdatesAndNotify();
+                    }
+                },
+                { type: 'separator' },
                 {
                     label: 'About',
                     click: () => {
