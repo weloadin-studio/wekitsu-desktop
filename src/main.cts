@@ -16,6 +16,9 @@ if (ffmpegStatic) {
 const isPackaged = process.mainModule?.filename.indexOf('app.asar') !== -1;
 dotenv.config({ path: isPackaged ? path.join(process.resourcesPath, '.env') : path.join(__dirname, '../.env') });
 
+const WEKITSU_URL = process.env.WEKITSU_URL || 'https://wekitsu.weloadin.lol';
+const WEKITSU_API_URL = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
+
 const store = new Store({ name: 'wekitsu-settings', projectName: 'wekitsu-desktop' } as any);
 
 // We handle update flow interactively
@@ -330,13 +333,12 @@ function setupIpcHandlers() {
 
         try {
             const extract = require('extract-zip');
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
 
             if (progressWindow && !progressWindow.isDestroyed()) {
                 progressWindow.webContents.send('sync-progress', 'Fetching snapshot info...');
             }
 
-            const snapshotRes = await fetch(`${apiUrl}/snapshots/${payload.taskId}`);
+            const snapshotRes = await fetch(`${WEKITSU_API_URL}/snapshots/${payload.taskId}`);
             if (!snapshotRes.ok) {
                 throw new Error(`Failed to fetch snapshots: ${snapshotRes.statusText}`);
             }
@@ -359,7 +361,7 @@ function setupIpcHandlers() {
                     progressWindow.webContents.send('sync-progress', `Downloading ${snap.type} zip...`);
                 }
 
-                const zipUrl = `${apiUrl}/assets/${payload.taskId}/${commitId}/contents.zip`;
+                const zipUrl = `${WEKITSU_API_URL}/assets/${payload.taskId}/${commitId}/contents.zip`;
                 const zipRes = await fetch(zipUrl);
 
                 if (!zipRes.ok) {
@@ -453,8 +455,7 @@ function setupIpcHandlers() {
     ipcMain.handle('api-create-asset', async (event, payload: any) => {
         console.log(`[Desktop IPC] api-create-asset called. Payload:`, payload);
         try {
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
-            const response = await fetch(`${apiUrl}/createAsset`, {
+            const response = await fetch(`${WEKITSU_API_URL}/createAsset`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -471,8 +472,7 @@ function setupIpcHandlers() {
     ipcMain.handle('api-link-asset-task', async (event, payload: { assetId: string, taskId: string }) => {
         console.log(`[Desktop IPC] api-link-asset-task called for Asset: ${payload.assetId} -> Task: ${payload.taskId}`);
         try {
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
-            const response = await fetch(`${apiUrl}/asset-task-links`, {
+            const response = await fetch(`${WEKITSU_API_URL}/asset-task-links`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -488,8 +488,7 @@ function setupIpcHandlers() {
 
     ipcMain.handle('api-get-linked-task', async (event, assetId: string) => {
         try {
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
-            const response = await fetch(`${apiUrl}/asset-task-links/${assetId}`);
+            const response = await fetch(`${WEKITSU_API_URL}/asset-task-links/${assetId}`);
             if (response.status === 404) return { success: true, data: null };
             const data = await response.json();
             return { success: response.ok, data, status: response.status };
@@ -501,8 +500,7 @@ function setupIpcHandlers() {
 
     ipcMain.handle('api-get-task', async (event, taskId: string) => {
         try {
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
-            const response = await fetch(`${apiUrl}/get-task/${taskId}`);
+            const response = await fetch(`${WEKITSU_API_URL}/get-task/${taskId}`);
             const data = await response.json();
             return { success: response.ok, data, status: response.status };
         } catch (error: any) {
@@ -513,8 +511,7 @@ function setupIpcHandlers() {
 
     ipcMain.handle('api-get-linked-assets', async (event, taskId: string) => {
         try {
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
-            const response = await fetch(`${apiUrl}/asset-task-links/task/${taskId}`);
+            const response = await fetch(`${WEKITSU_API_URL}/asset-task-links/task/${taskId}`);
             const data = await response.json();
             return { success: response.ok, data, status: response.status };
         } catch (error: any) {
@@ -525,8 +522,7 @@ function setupIpcHandlers() {
 
     ipcMain.handle('api-delete-linked-asset', async (event, assetId: string) => {
         try {
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
-            const response = await fetch(`${apiUrl}/asset-task-links/${assetId}`, {
+            const response = await fetch(`${WEKITSU_API_URL}/asset-task-links/${assetId}`, {
                 method: 'DELETE'
             });
             const data = await response.json();
@@ -660,8 +656,7 @@ function setupIpcHandlers() {
             }
 
             console.log(`[Desktop IPC] Sending payload to remote Wekitsu API...`);
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
-            const response = await fetch(`${apiUrl}/snapshot`, {
+            const response = await fetch(`${WEKITSU_API_URL}/snapshot`, {
                 method: 'POST',
                 body: formData
             });
@@ -688,8 +683,7 @@ function setupIpcHandlers() {
 
     ipcMain.handle('api-get-snapshots', async (event, taskId: string) => {
         try {
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
-            const response = await fetch(`${apiUrl}/snapshots/${taskId}`);
+            const response = await fetch(`${WEKITSU_API_URL}/snapshots/${taskId}`);
             const data = await response.json();
             return { success: response.ok, data, status: response.status };
         } catch (error: any) {
@@ -702,8 +696,7 @@ function setupIpcHandlers() {
 
     ipcMain.handle('api-delete-snapshot', async (event, { taskId, commitId }: { taskId: string, commitId: string }) => {
         try {
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
-            const response = await fetch(`${apiUrl}/snapshots/${taskId}/${commitId}`, {
+            const response = await fetch(`${WEKITSU_API_URL}/snapshots/${taskId}/${commitId}`, {
                 method: 'DELETE'
             });
             // DELETE usually returns 204 No Content
@@ -756,12 +749,11 @@ function setupIpcHandlers() {
             }
 
             console.log(`[Desktop IPC] Sending rollback request to Wekitsu API for commit: ${commitId}`);
-            const apiUrl = process.env.WEKITSU_API_URL || 'https://wekitsu-api.weloadin.lol';
 
             // Determine snapshot type to properly extract it at the local path
             let snapType = 'source';
             try {
-                const snapshotRes = await fetch(`${apiUrl}/snapshots/${taskId}`);
+                const snapshotRes = await fetch(`${WEKITSU_API_URL}/snapshots/${taskId}`);
                 if (snapshotRes.ok) {
                     const snapshots = await snapshotRes.json();
                     const snap = snapshots.find((s: any) => s.commitId === commitId);
@@ -773,7 +765,7 @@ function setupIpcHandlers() {
                 console.error("[Desktop IPC] Failed to fetch snapshot details for type", e);
             }
 
-            const response = await fetch(`${apiUrl}/snapshots/${taskId}/${commitId}/rollback`, {
+            const response = await fetch(`${WEKITSU_API_URL}/snapshots/${taskId}/${commitId}/rollback`, {
                 method: 'POST'
             });
             const data = await response.json();
@@ -795,7 +787,7 @@ function setupIpcHandlers() {
 
                 try {
                     console.log(`[Desktop IPC] Fetching contents zip for extraction...`);
-                    const zipUrl = `${apiUrl}/assets/${taskId}/${commitId}/contents.zip`;
+                    const zipUrl = `${WEKITSU_API_URL}/assets/${taskId}/${commitId}/contents.zip`;
                     const zipRes = await fetch(zipUrl);
 
                     if (zipRes.ok) {
@@ -870,9 +862,10 @@ function createWindow() {
 
     mainWindow.webContents.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
     // mainWindow.loadURL("http://localhost:8080");
-    mainWindow.loadURL("https://wekitsu.weloadin.lol/");
+    // mainWindow.loadURL("https://wekitsu.weloadin.lol/");
     // mainWindow.loadURL("https://192.168.88.189:8080");
-    // mainWindow.webContents.openDevTools();
+    mainWindow.loadURL(WEKITSU_URL);
+    mainWindow.webContents.openDevTools();
 }
 
 
