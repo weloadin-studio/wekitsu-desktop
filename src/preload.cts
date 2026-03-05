@@ -31,5 +31,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteSnapshot: (taskId: string, commitId: string) => ipcRenderer.invoke('api-delete-snapshot', { taskId, commitId }),
     processMedia: (filePath: string, type: 'thumbnail' | 'preview') => ipcRenderer.invoke('api-process-media', { filePath, type }),
     cleanupMedia: (filePaths: string[]) => ipcRenderer.invoke('api-cleanup-media', filePaths),
+    getDefaultComments: () => ipcRenderer.invoke('api-get-default-comments'),
+    createDefaultComment: (payload: any) => ipcRenderer.invoke('api-create-default-comment', payload),
+    updateDefaultComment: (id: string, comment: string) => ipcRenderer.invoke('api-update-default-comment', id, comment),
+    deleteDefaultComment: (id: string) => ipcRenderer.invoke('api-delete-default-comment', id),
     getPathForFile: (file: File) => webUtils.getPathForFile(file)
 });

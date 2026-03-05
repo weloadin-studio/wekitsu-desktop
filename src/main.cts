@@ -8,6 +8,7 @@ import { setupSystemIPC } from "./ipc/system.cjs";
 import { setupSnapshotsIPC } from "./ipc/snapshots.cjs";
 import { setupAssetsIPC } from "./ipc/assets.cjs";
 import { setupTasksIPC } from "./ipc/tasks.cjs";
+import { setupDefaultCommentsIPC } from "./ipc/default-comments.cjs";
 
 import { appState } from "./core/state.cjs";
 
@@ -63,6 +64,7 @@ if (!gotTheLock) {
         setupSnapshotsIPC();
         setupAssetsIPC();
         setupTasksIPC();
+        setupDefaultCommentsIPC();
 
         createMenu();
 
