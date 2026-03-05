@@ -16,8 +16,7 @@
     "appId": "com.gitink.wekitsu",
     "productName": "Wekitsu Desktop",
     "files": [
-      "dist/main.cjs",
-      "dist/preload.cjs",
+      "dist/**/*.cjs",
       "dist/**/*.html",
       "package.json",
       "icon.png"
