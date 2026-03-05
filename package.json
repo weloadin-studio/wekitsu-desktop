@@ -21,6 +21,9 @@
       "package.json",
       "icon.png"
     ],
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**/*"
+    ],
     "win": {
       "target": "nsis",
       "icon": "icon.ico"

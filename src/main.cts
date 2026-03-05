@@ -13,7 +13,13 @@ import { setupDefaultCommentsIPC } from "./ipc/default-comments.cjs";
 import { appState } from "./core/state.cjs";
 
 if (ffmpegStatic) {
-    ffmpeg.setFfmpegPath(ffmpegStatic);
+    // In production the binary lives in the unpacked directory alongside the .asar,
+    // not inside it (binaries cannot be spawned from within an .asar archive).
+    const ffmpegPath = ffmpegStatic.replace(
+        'app.asar',
+        'app.asar.unpacked'
+    );
+    ffmpeg.setFfmpegPath(ffmpegPath);
 }
 
 const gotTheLock = app.requestSingleInstanceLock();
