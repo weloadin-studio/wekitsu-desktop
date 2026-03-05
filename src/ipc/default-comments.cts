@@ -16,12 +16,12 @@ export function setupDefaultCommentsIPC() {
         }
     });
 
-    ipcMain.handle("api-create-default-comment", async (_, { assetTypeId, taskTypeId, comment }) => {
+    ipcMain.handle("api-create-default-comment", async (_, { assetTypeId, taskTypeId, comment, checklist }) => {
         try {
             const res = await fetch(`${WEKITSU_API_URL}/default-comments`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ assetTypeId, taskTypeId, comment }),
+                body: JSON.stringify({ assetTypeId, taskTypeId, comment, checklist }),
             });
             if (!res.ok) {
                 return { success: false, error: `HTTP ${res.status}` };
@@ -34,12 +34,12 @@ export function setupDefaultCommentsIPC() {
         }
     });
 
-    ipcMain.handle("api-update-default-comment", async (_, id, comment) => {
+    ipcMain.handle("api-update-default-comment", async (_, id, comment, checklist) => {
         try {
             const res = await fetch(`${WEKITSU_API_URL}/default-comments/${id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ comment })
+                body: JSON.stringify({ comment, checklist })
             });
             if (!res.ok) {
                 return { success: false, error: `HTTP ${res.status}` };
