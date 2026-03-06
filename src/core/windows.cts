@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeImage } from "electron";
+import { app, BrowserWindow, nativeImage, screen } from "electron";
 import path from "path";
 import { appState, store, WEKITSU_URL } from "./state.cjs";
 
@@ -42,13 +42,44 @@ export function createWindow() {
         return;
     }
 
+    const defaultBounds = { width: 1200, height: 800 };
+    let windowBounds = store.get("windowBounds", defaultBounds) as any;
+    const isMaximized = store.get("isMaximized", false) as boolean;
+
+    // Ensure window is visible on at least one display
+    if (windowBounds.x !== undefined && windowBounds.y !== undefined) {
+        const displays = screen.getAllDisplays();
+        const isVisible = displays.some(display => {
+            const bounds = display.bounds;
+            return (
+                windowBounds.x >= bounds.x &&
+                windowBounds.y >= bounds.y &&
+                windowBounds.x < bounds.x + bounds.width &&
+                windowBounds.y < bounds.y + bounds.height
+            );
+        });
+        if (!isVisible) {
+            windowBounds = defaultBounds;
+        }
+    }
+
     appState.mainWindow = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        ...windowBounds,
         webPreferences: {
             preload: path.join(__dirname, "../preload.cjs"),
         },
         icon: getAppIcon()
+    });
+
+    if (isMaximized) {
+        appState.mainWindow.maximize();
+    }
+
+    appState.mainWindow.on('close', () => {
+        if (appState.mainWindow) {
+            store.set("windowBounds", appState.mainWindow.getNormalBounds());
+            store.set("isMaximized", appState.mainWindow.isMaximized());
+        }
     });
 
     appState.mainWindow.setMenuBarVisibility(true);
