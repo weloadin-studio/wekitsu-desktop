@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveSettings: (settings: { workspacePath: string }) => ipcRenderer.invoke('save-settings', settings),
     selectDirectory: () => ipcRenderer.invoke('select-directory'),
     checkWorkspacePath: (relativePath: string) => ipcRenderer.invoke('check-path-exists', relativePath),
+    getLinkedWorkspaceTasks: () => ipcRenderer.invoke('get-linked-workspace-tasks'),
     linkToWorkspace: (taskId: string, relativePath: string) => ipcRenderer.invoke('link-to-workspace', { taskId, relativePath }),
     unlinkFromWorkspace: (taskId: string, relativePath: string) => ipcRenderer.invoke('unlink-from-workspace', { taskId, relativePath }),
     onSyncProgress: (callback: (event: any, filename: string) => void) => ipcRenderer.on('sync-progress', callback),

@@ -33,6 +33,11 @@ export function setupSystemIPC() {
         };
     });
 
+    ipcMain.handle('get-linked-workspace-tasks', () => {
+        const linkedTasks = store.get("linkedTasks", {}) as Record<string, string>;
+        return linkedTasks;
+    });
+
     ipcMain.handle('save-settings', (event, settings: { workspacePath: string }) => {
         store.set("workspacePath", settings.workspacePath);
 
