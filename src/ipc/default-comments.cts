@@ -16,12 +16,12 @@ export function setupDefaultCommentsIPC() {
         }
     });
 
-    ipcMain.handle("api-create-default-comment", async (_, { assetTypeId, taskTypeId, comment, checklist }) => {
+    ipcMain.handle("api-create-default-comment", async (_, { productionId, assetTypeId, taskTypeId, comment, checklist }) => {
         try {
             const res = await fetch(`${WEKITSU_API_URL}/default-comments`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ assetTypeId, taskTypeId, comment, checklist }),
+                body: JSON.stringify({ productionId, assetTypeId, taskTypeId, comment, checklist }),
             });
             if (!res.ok) {
                 return { success: false, error: `HTTP ${res.status}` };
