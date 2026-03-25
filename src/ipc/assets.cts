@@ -71,4 +71,21 @@ export function setupAssetsIPC() {
             return { success: false, error: error.message };
         }
     });
+
+    ipcMain.handle('api-delete-asset-files', async (event, payload: any) => {
+        console.log(`[Desktop IPC] api-delete-asset-files called for Asset: ${payload.assetId}`);
+        try {
+            const response = await fetch(`${WEKITSU_API_URL}/deleteAsset`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            console.log(`[Desktop IPC] api-delete-asset-files responded with status: ${response.status}`);
+            return { success: response.ok, data, status: response.status };
+        } catch (error: any) {
+            console.error('[Desktop IPC] API deleteAssetFiles error:', error);
+            return { success: false, error: error.message };
+        }
+    });
 }

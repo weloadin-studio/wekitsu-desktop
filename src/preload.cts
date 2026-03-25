@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getLinkedTask: (assetId: string) => ipcRenderer.invoke('api-get-linked-task', assetId),
     getLinkedAssets: (taskId: string) => ipcRenderer.invoke('api-get-linked-assets', taskId),
     deleteLinkedAsset: (assetId: string) => ipcRenderer.invoke('api-delete-linked-asset', assetId),
+    deleteAssetFiles: (payload: any) => ipcRenderer.invoke('api-delete-asset-files', payload),
     submitSnapshot: (payload: any) => ipcRenderer.invoke('api-snapshot', payload),
     getSnapshots: (taskId: string) => ipcRenderer.invoke('api-get-snapshots', taskId),
     rollbackSnapshot: (taskId: string, commitId: string) => ipcRenderer.invoke('api-rollback-snapshot', { taskId, commitId }),
