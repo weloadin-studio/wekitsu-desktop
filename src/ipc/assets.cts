@@ -1,5 +1,7 @@
 import { ipcMain } from "electron";
-import { WEKITSU_API_URL } from "../core/state.cjs";
+import { WEKITSU_API_URL, store } from "../core/state.cjs";
+import path from "path";
+import fs from "fs";
 
 export function setupAssetsIPC() {
     ipcMain.handle('api-create-asset', async (event, payload: any) => {
@@ -81,6 +83,30 @@ export function setupAssetsIPC() {
                 body: JSON.stringify(payload)
             });
             const data = await response.json();
+            
+            // Unlink from local workspace
+            const workspaceDir = store.get("workspacePath") as string | undefined;
+            if (workspaceDir && payload.projectName && payload.assetType && payload.assetName) {
+                const targetPath = path.join(workspaceDir, payload.projectName, payload.assetType, payload.assetName);
+                if (fs.existsSync(targetPath)) {
+                    await fs.promises.rm(targetPath, { recursive: true, force: true });
+                    console.log(`[Desktop IPC] Deleted local workspace folder: ${targetPath}`);
+                }
+                
+                const linkedTasks = store.get("linkedTasks", {}) as Record<string, string>;
+                let tasksUpdated = false;
+                const assetPrefix = `${payload.projectName}/${payload.assetType}/${payload.assetName}/`;
+                for (const taskId in linkedTasks) {
+                    if (linkedTasks[taskId].startsWith(assetPrefix)) {
+                        delete linkedTasks[taskId];
+                        tasksUpdated = true;
+                    }
+                }
+                if (tasksUpdated) {
+                    store.set("linkedTasks", linkedTasks);
+                }
+            }
+
             console.log(`[Desktop IPC] api-delete-asset-files responded with status: ${response.status}`);
             return { success: response.ok, data, status: response.status };
         } catch (error: any) {
