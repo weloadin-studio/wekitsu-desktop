@@ -13,8 +13,9 @@ contextBridge.exposeInMainWorld('versions', {
 contextBridge.exposeInMainWorld('electronAPI', {
     openExplorer: (path: string) => ipcRenderer.invoke('open-path', path),
     getSettings: () => ipcRenderer.invoke('get-settings'),
-    saveSettings: (settings: { workspacePath: string }) => ipcRenderer.invoke('save-settings', settings),
+    saveSettings: (settings: { workspacePath: string, mayaPath?: string, blenderPath?: string, photoshopPath?: string, substancePath?: string }) => ipcRenderer.invoke('save-settings', settings),
     selectDirectory: () => ipcRenderer.invoke('select-directory'),
+    selectFile: () => ipcRenderer.invoke('select-file'),
     checkWorkspacePath: (relativePath: string) => ipcRenderer.invoke('check-path-exists', relativePath),
     getLinkedWorkspaceTasks: () => ipcRenderer.invoke('get-linked-workspace-tasks'),
     linkToWorkspace: (taskId: string, relativePath: string) => ipcRenderer.invoke('link-to-workspace', { taskId, relativePath }),

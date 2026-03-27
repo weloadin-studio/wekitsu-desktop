@@ -29,7 +29,11 @@ export function setupSystemIPC() {
 
     ipcMain.handle('get-settings', () => {
         return {
-            workspacePath: store.get("workspacePath") || ""
+            workspacePath: store.get("workspacePath") || "",
+            mayaPath: store.get("mayaPath") || "",
+            blenderPath: store.get("blenderPath") || "",
+            photoshopPath: store.get("photoshopPath") || "",
+            substancePath: store.get("substancePath") || ""
         };
     });
 
@@ -38,8 +42,12 @@ export function setupSystemIPC() {
         return linkedTasks;
     });
 
-    ipcMain.handle('save-settings', (event, settings: { workspacePath: string }) => {
+    ipcMain.handle('save-settings', (event, settings: { workspacePath: string, mayaPath?: string, blenderPath?: string, photoshopPath?: string, substancePath?: string }) => {
         store.set("workspacePath", settings.workspacePath);
+        if (settings.mayaPath !== undefined) store.set("mayaPath", settings.mayaPath);
+        if (settings.blenderPath !== undefined) store.set("blenderPath", settings.blenderPath);
+        if (settings.photoshopPath !== undefined) store.set("photoshopPath", settings.photoshopPath);
+        if (settings.substancePath !== undefined) store.set("substancePath", settings.substancePath);
 
         if (appState.settingsWindow) {
             appState.settingsWindow.close();
@@ -56,6 +64,18 @@ export function setupSystemIPC() {
         if (!appState.settingsWindow) return null;
         const result = await dialog.showOpenDialog(appState.settingsWindow, {
             properties: ['openDirectory']
+        });
+        if (result.canceled) {
+            return null;
+        } else {
+            return result.filePaths[0];
+        }
+    });
+
+    ipcMain.handle('select-file', async () => {
+        if (!appState.settingsWindow) return null;
+        const result = await dialog.showOpenDialog(appState.settingsWindow, {
+            properties: ['openFile']
         });
         if (result.canceled) {
             return null;

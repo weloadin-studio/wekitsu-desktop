@@ -27,6 +27,23 @@
             width: 100%;
             max-width: 450px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .container::-webkit-scrollbar-track {
+            background: #2d2d2d; 
+            border-radius: 8px;
+        }
+        .container::-webkit-scrollbar-thumb {
+            background: #555; 
+            border-radius: 4px;
+        }
+        .container::-webkit-scrollbar-thumb:hover {
+            background: #777; 
         }
 
         h2 {
@@ -126,6 +143,34 @@
             </div>
             <div class="error" id="workspaceError">Workspace path is required</div>
         </div>
+        <div class="form-group">
+            <label for="mayaPath">Maya Path</label>
+            <div class="input-group">
+                <input type="text" id="mayaPath" placeholder="e.g. C:\Program Files\Autodesk\Maya\bin\maya.exe">
+                <button type="button" class="browse-btn" id="browseMayaBtn">Browse</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="blenderPath">Blender Path</label>
+            <div class="input-group">
+                <input type="text" id="blenderPath" placeholder="e.g. C:\Program Files\Blender Foundation\Blender\blender.exe">
+                <button type="button" class="browse-btn" id="browseBlenderBtn">Browse</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="photoshopPath">Photoshop Path</label>
+            <div class="input-group">
+                <input type="text" id="photoshopPath" placeholder="e.g. C:\Program Files\Adobe\Adobe Photoshop\Photoshop.exe">
+                <button type="button" class="browse-btn" id="browsePhotoshopBtn">Browse</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="substancePath">Substance Path</label>
+            <div class="input-group">
+                <input type="text" id="substancePath" placeholder="e.g. C:\Program Files\Adobe\Adobe Substance 3D Painter\Adobe Substance 3D Painter.exe">
+                <button type="button" class="browse-btn" id="browseSubstanceBtn">Browse</button>
+            </div>
+        </div>
         <button class="primary-btn" id="saveBtn">Save & Continue</button>
     </div>
 
@@ -134,6 +179,18 @@
         const browseWorkspaceBtn = document.getElementById('browseWorkspaceBtn');
         const saveBtn = document.getElementById('saveBtn');
         const workspaceError = document.getElementById('workspaceError');
+
+        const mayaInput = document.getElementById('mayaPath');
+        const browseMayaBtn = document.getElementById('browseMayaBtn');
+
+        const blenderInput = document.getElementById('blenderPath');
+        const browseBlenderBtn = document.getElementById('browseBlenderBtn');
+
+        const photoshopInput = document.getElementById('photoshopPath');
+        const browsePhotoshopBtn = document.getElementById('browsePhotoshopBtn');
+
+        const substanceInput = document.getElementById('substancePath');
+        const browseSubstanceBtn = document.getElementById('browseSubstanceBtn');
 
         // Browse for directory
         async function handleBrowse(inputElement) {
@@ -147,13 +204,32 @@
             }
         }
 
+        async function handleBrowseFile(inputElement) {
+            try {
+                const path = await window.electronAPI.selectFile();
+                if (path) {
+                    inputElement.value = path;
+                }
+            } catch (err) {
+                console.error("Failed to open file dialog", err);
+            }
+        }
+
         browseWorkspaceBtn.addEventListener('click', () => handleBrowse(workspaceInput));
+        browseMayaBtn.addEventListener('click', () => handleBrowseFile(mayaInput));
+        browseBlenderBtn.addEventListener('click', () => handleBrowseFile(blenderInput));
+        browsePhotoshopBtn.addEventListener('click', () => handleBrowseFile(photoshopInput));
+        browseSubstanceBtn.addEventListener('click', () => handleBrowseFile(substanceInput));
 
         // Load existing settings
         async function loadSettings() {
             try {
                 const settings = await window.electronAPI.getSettings();
                 if (settings.workspacePath) workspaceInput.value = settings.workspacePath;
+                if (settings.mayaPath) mayaInput.value = settings.mayaPath;
+                if (settings.blenderPath) blenderInput.value = settings.blenderPath;
+                if (settings.photoshopPath) photoshopInput.value = settings.photoshopPath;
+                if (settings.substancePath) substanceInput.value = settings.substancePath;
             } catch (err) {
                 console.error("Failed to load settings:", err);
             }
@@ -161,6 +237,10 @@
 
         saveBtn.addEventListener('click', async () => {
             const workspacePath = workspaceInput.value.trim();
+            const mayaPath = mayaInput.value.trim();
+            const blenderPath = blenderInput.value.trim();
+            const photoshopPath = photoshopInput.value.trim();
+            const substancePath = substanceInput.value.trim();
 
             let hasError = false;
 
@@ -178,7 +258,11 @@
 
             try {
                 await window.electronAPI.saveSettings({
-                    workspacePath
+                    workspacePath,
+                    mayaPath,
+                    blenderPath,
+                    photoshopPath,
+                    substancePath
                 });
             } catch (err) {
                 console.error("Failed to save settings:", err);
