@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wekitsu Explorer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .header {
+            background-color: #2d2d2d;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+        }
+
+        .up-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .up-btn:hover:not(:disabled) {
+            background-color: #555;
+        }
+
+        .up-btn:disabled {
+            background-color: #333;
+            color: #777;
+            cursor: not-allowed;
+        }
+
+        .path-display {
+            font-family: monospace;
+            background-color: #1e1e1e;
+            padding: 8px 12px;
+            border-radius: 4px;
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #ccc;
+        }
+
+        .content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .file-list {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .file-list th, .file-list td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #333;
+        }
+
+        .file-list th {
+            color: #888;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .file-list tbody tr {
+            transition: background-color 0.1s;
+        }
+
+        .file-list tbody tr:hover {
+            background-color: #2a2a2a;
+        }
+
+        .item-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .folder-row {
+            cursor: pointer;
+        }
+
+        .folder-icon {
+            color: #eab308; /* yellow for folder */
+        }
+
+        .file-icon {
+            color: #9ca3af; /* gray for file */
+        }
+
+        .open-with {
+            display: flex;
+            gap: 6px;
+        }
+
+        .app-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            color: white;
+            user-select: none;
+            transition: transform 0.1s, opacity 0.1s;
+            border: none;
+        }
+
+        .app-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .app-icon:active {
+            transform: scale(0.95);
+        }
+
+        .app-maya { background-color: #0696D7; }
+        .app-blender { background-color: #E87D0D; }
+        .app-photoshop { background-color: #31A8FF; color: #001E36; }
+        .app-substance { background-color: #87C540; color: #1e2614; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+            font-style: italic;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #444; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666; 
+        }
+
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button id="upBtn" class="up-btn" disabled>&#8593; Up</button>
+        <div id="pathDisplay" class="path-display">...</div>
+    </div>
+    
+    <div class="content">
+        <table class="file-list">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th style="width: 150px;">Open With</th>
+                </tr>
+            </thead>
+            <tbody id="fileListBody">
+                <!-- Dynamic content will be injected here -->
+            </tbody>
+        </table>
+        <div id="emptyState" class="empty-state" style="display: none;">
+            Folder is empty
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const rootPath = urlParams.get('root') || '';
+        let currentPath = urlParams.get('path') || rootPath;
+
+        const upBtn = document.getElementById('upBtn');
+        const pathDisplay = document.getElementById('pathDisplay');
+        const fileListBody = document.getElementById('fileListBody');
+        const emptyState = document.getElementById('emptyState');
+
+        // Path utilities
+        function normalizePath(p) {
+            return p.replace(/\\/g, '/').replace(/\/$/, '');
+        }
+
+        function getParentPath(p) {
+            const normalized = normalizePath(p);
+            const lastSlash = normalized.lastIndexOf('/');
+            if (lastSlash === -1) return p; // Root or simple name
+            return normalized.substring(0, lastSlash);
+        }
+
+        function canGoUp() {
+            const normCurrent = normalizePath(currentPath).toLowerCase();
+            const normRoot = normalizePath(rootPath).toLowerCase();
+            return normCurrent.length > normRoot.length && normCurrent.startsWith(normRoot);
+        }
+
+        function updateUI() {
+            pathDisplay.textContent = currentPath;
+            upBtn.disabled = !canGoUp();
+        }
+
+        upBtn.addEventListener('click', () => {
+            if (canGoUp()) {
+                currentPath = getParentPath(currentPath);
+                loadDirectory(currentPath);
+            }
+        });
+
+        async function openApp(filePath, appKey) {
+            try {
+                const res = await window.electronAPI.openWithApp(filePath, appKey);
+                if (!res.success) {
+                    alert('Failed to open with ' + appKey + ':\\n' + res.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Error opening file: ' + err.message);
+            }
+        }
+
+        function createRow(item) {
+            const tr = document.createElement('tr');
+            
+            // Name cell
+            const tdName = document.createElement('td');
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'item-name';
+            
+            if (item.isDirectory) {
+                nameDiv.innerHTML = `<span class="folder-icon">&#128193;</span> <span>${item.name}</span>`;
+                tr.className = 'folder-row';
+                tr.addEventListener('click', () => {
+                    currentPath = item.path;
+                    loadDirectory(currentPath);
+                });
+            } else {
+                nameDiv.innerHTML = `<span class="file-icon">&#128196;</span> <span>${item.name}</span>`;
+            }
+            tdName.appendChild(nameDiv);
+            tr.appendChild(tdName);
+
+            // Open With cell
+            const tdActions = document.createElement('td');
+            if (!item.isDirectory) {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'open-with';
+                
+                const apps = [
+                    { key: 'mayaPath', label: 'M', title: 'Maya', className: 'app-maya' },
+                    { key: 'blenderPath', label: 'B', title: 'Blender', className: 'app-blender' },
+                    { key: 'photoshopPath', label: 'Ps', title: 'Photoshop', className: 'app-photoshop' },
+                    { key: 'substancePath', label: 'Pt', title: 'Substance Painter', className: 'app-substance' }
+                ];
+
+                apps.forEach(app => {
+                    const btn = document.createElement('button');
+                    btn.className = `app-icon ${app.className}`;
+                    btn.textContent = app.label;
+                    btn.title = `Open with ${app.title}`;
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openApp(item.path, app.key);
+                    });
+                    actionsDiv.appendChild(btn);
+                });
+
+                tdActions.appendChild(actionsDiv);
+            }
+            tr.appendChild(tdActions);
+
+            return tr;
+        }
+
+        async function loadDirectory(dir) {
+            fileListBody.innerHTML = '';
+            emptyState.style.display = 'none';
+            updateUI();
+            
+            try {
+                const res = await window.electronAPI.getDirectoryContents(dir);
+                if (!res.success) {
+                    console.error('Failed to load directory content:', res.error);
+                    alert('Failed to load directory:\\n' + res.error);
+                    return;
+                }
+
+                if (res.contents.length === 0) {
+                    emptyState.style.display = 'block';
+                } else {
+                    res.contents.forEach(item => {
+                        fileListBody.appendChild(createRow(item));
+                    });
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred:\\n' + err.message);
+            }
+        }
+
+        // Initialize
+        loadDirectory(currentPath);
+
+    </script>
+</body>
+</html>

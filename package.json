@@ -7,7 +7,7 @@
   "node": "22.13.4",
   "main": "dist/main.cjs",
   "scripts": {
-    "build": "tsc && node -e \"const fs=require('fs'); fs.copyFileSync('src/settings.html', 'dist/settings.html'); fs.copyFileSync('src/sync-progress.html', 'dist/sync-progress.html');\"",
+    "build": "tsc && node -e \"const fs=require('fs'); fs.copyFileSync('src/settings.html', 'dist/settings.html'); fs.copyFileSync('src/sync-progress.html', 'dist/sync-progress.html'); fs.copyFileSync('src/file-explorer.html', 'dist/file-explorer.html');\"",
     "start": "npm run build && electron .",
     "dist": "npm run build && dotenv -- electron-builder",
     "publish": "npm run build && dotenv -- electron-builder --publish always"

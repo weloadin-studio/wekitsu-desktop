@@ -97,6 +97,120 @@ export function setupSystemIPC() {
         }
     });
 
+    ipcMain.handle('open-file-explorer', async (event, relativePath: string, type: 'source' | 'exports') => {
+        const workspaceDir = store.get("workspacePath") as string | undefined;
+        if (!workspaceDir) return { success: false, error: "Workspace path not configured" };
+        
+        const targetPath = path.join(workspaceDir, relativePath, type);
+        
+        if (!fs.existsSync(targetPath)) {
+            await fs.promises.mkdir(targetPath, { recursive: true });
+        }
+
+        let explorerWindow = new BrowserWindow({
+            width: 800,
+            height: 600,
+            parent: appState.mainWindow || undefined,
+            webPreferences: {
+                preload: path.join(__dirname, "../preload.cjs"),
+                nodeIntegration: false,
+                contextIsolation: true
+            },
+            show: false,
+            title: `Wekitsu Explorer - ${type === 'source' ? 'Source' : 'Exports'}`
+        });
+
+        explorerWindow.setMenu(null);
+        
+        const explorerUrl = `file://${path.join(__dirname, "../file-explorer.html")}?path=${encodeURIComponent(targetPath)}&root=${encodeURIComponent(targetPath)}`;
+        explorerWindow.loadURL(explorerUrl);
+        
+        explorerWindow.once('ready-to-show', () => {
+            explorerWindow.show();
+        });
+
+        return { success: true };
+    });
+
+    ipcMain.handle('get-directory-contents', async (event, dirPath: string) => {
+        try {
+            const items = await fs.promises.readdir(dirPath, { withFileTypes: true });
+            const contents = items.map(item => ({
+                name: item.name,
+                isDirectory: item.isDirectory(),
+                path: path.join(dirPath, item.name)
+            }));
+            
+            contents.sort((a, b) => {
+                if (a.isDirectory === b.isDirectory) {
+                    return a.name.localeCompare(b.name);
+                }
+                return a.isDirectory ? -1 : 1;
+            });
+            return { success: true, contents };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
+
+    ipcMain.handle('open-with-app', async (event, filePath: string, appKey: string) => {
+        try {
+            const appPath = store.get(appKey) as string | undefined;
+            if (!appPath) throw new Error(`${appKey} is not configured in settings.`);
+            
+            const { spawn } = require('child_process');
+            let spawnArgs = [filePath];
+
+            if (appKey === 'mayaPath') {
+                let projPath = '';
+                let currentDir = path.dirname(filePath);
+                
+                // 1. Look for workspace.mel traversing upwards
+                while (currentDir && currentDir !== path.parse(currentDir).root) {
+                    if (fs.existsSync(path.join(currentDir, 'workspace.mel'))) {
+                        projPath = currentDir;
+                        break;
+                    }
+                    currentDir = path.dirname(currentDir);
+                }
+
+                // 2. Fallback: if 'scenes' is in the path, use its parent
+                if (!projPath) {
+                    const scenesPattern = path.sep + 'scenes' + path.sep;
+                    const scenesIndex = filePath.toLowerCase().lastIndexOf(scenesPattern);
+                    if (scenesIndex !== -1) {
+                        projPath = filePath.substring(0, scenesIndex);
+                    }
+                }
+
+                // 3. Fallback: if 'source' is in the path, use its parent (Wekitsu asset root)
+                if (!projPath) {
+                    const sourcePattern = path.sep + 'source' + path.sep;
+                    const sourceIndex = filePath.toLowerCase().lastIndexOf(sourcePattern);
+                    if (sourceIndex !== -1) {
+                        projPath = filePath.substring(0, sourceIndex);
+                    }
+                }
+
+                // 4. Final fallback: just use the directory of the file
+                if (!projPath) {
+                    projPath = path.dirname(filePath);
+                }
+
+                if (projPath) {
+                    spawnArgs.push('-proj', projPath);
+                }
+            }
+
+            const child = spawn(appPath, spawnArgs, { detached: true, stdio: 'ignore' });
+            child.unref();
+
+            return { success: true };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    });
+
     ipcMain.handle('link-to-workspace', async (event, payload: { taskId: string, relativePath: string }) => {
         console.log(`[Desktop IPC] link-to-workspace called for Task: ${payload.taskId} -> ${payload.relativePath}`);
         const workspaceDir = store.get("workspacePath") as string | undefined;
