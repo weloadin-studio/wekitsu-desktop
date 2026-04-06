@@ -3,7 +3,7 @@ import type { BrowserWindow as BrowserWindowType } from "electron";
 import path from "path";
 import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
-import { appState, store, WEKITSU_API_URL } from "../core/state.cjs";
+import { appState, store, WEKITSU_API_URL, WEKITSU_URL, updateWekitsuUrl } from "../core/state.cjs";
 import { createWindow } from "../core/windows.cjs";
 
 export function setupSystemIPC() {
@@ -29,6 +29,7 @@ export function setupSystemIPC() {
 
     ipcMain.handle('get-settings', () => {
         return {
+            wekitsuUrl: store.get("wekitsuUrl") || WEKITSU_URL,
             workspacePath: store.get("workspacePath") || "",
             mayaPath: store.get("mayaPath") || "",
             blenderPath: store.get("blenderPath") || "",
@@ -42,7 +43,16 @@ export function setupSystemIPC() {
         return linkedTasks;
     });
 
-    ipcMain.handle('save-settings', (event, settings: { workspacePath: string, mayaPath?: string, blenderPath?: string, photoshopPath?: string, substancePath?: string }) => {
+    ipcMain.handle('save-settings', (event, settings: { wekitsuUrl?: string, workspacePath: string, mayaPath?: string, blenderPath?: string, photoshopPath?: string, substancePath?: string }) => {
+        let urlChanged = false;
+        if (settings.wekitsuUrl !== undefined) {
+            if (store.get("wekitsuUrl") !== settings.wekitsuUrl) {
+                urlChanged = true;
+            }
+            store.set("wekitsuUrl", settings.wekitsuUrl);
+            updateWekitsuUrl(settings.wekitsuUrl);
+        }
+        
         store.set("workspacePath", settings.workspacePath);
         if (settings.mayaPath !== undefined) store.set("mayaPath", settings.mayaPath);
         if (settings.blenderPath !== undefined) store.set("blenderPath", settings.blenderPath);
@@ -55,6 +65,8 @@ export function setupSystemIPC() {
 
         if (!appState.mainWindow) {
             createWindow();
+        } else if (urlChanged) {
+            appState.mainWindow.loadURL(WEKITSU_URL);
         }
 
         return { success: true };
