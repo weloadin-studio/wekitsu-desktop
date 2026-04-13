@@ -1,0 +1,38 @@
+name: Publish Desktop App
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  publish:
+    runs-on: self-hosted
+    
+    permissions:
+      contents: write # Needed to create GitHub Releases
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      # Create an empty .env file so dotenv-cli doesn't fail when running "npm run publish"
+      # You can add production environment variables here if your build needs them.
+      - name: Create .env
+        run: New-Item -Path .env -ItemType File
+        shell: pwsh
+
+      - name: Build and Publish
+        run: npm run publish
+        env:
+          # GITHUB_TOKEN is automatically provided by GitHub Actions
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
