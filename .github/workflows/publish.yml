@@ -12,6 +12,10 @@ jobs:
     permissions:
       contents: write # Needed to create GitHub Releases
 
+    defaults:
+      run:
+        shell: cmd
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -28,8 +32,7 @@ jobs:
       # Create an empty .env file so dotenv-cli doesn't fail when running "npm run publish"
       # You can add production environment variables here if your build needs them.
       - name: Create .env
-        run: New-Item -Path .env -ItemType File
-        shell: pwsh
+        run: type NUL > .env
 
       - name: Build and Publish
         run: npm run publish
