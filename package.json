@@ -3,7 +3,7 @@
   "productName": "Wekitsu Desktop",
   "version": "0.6.6",
   "description": "wekitsu desktop is an electron wrapper for the web application wekitsu",
-  "repository": "gitink-studio/wekitsu-desktop",
+  "repository": "weloadin-studio/wekitsu-desktop",
   "node": "22.13.4",
   "main": "dist/main.cjs",
   "scripts": {
@@ -37,7 +37,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "gitink-studio",
+      "owner": "weloadin-studio",
       "repo": "wekitsu-desktop"
     }
   },
