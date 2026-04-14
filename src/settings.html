@@ -177,11 +177,35 @@
             </div>
         </div>
         <div class="form-group">
-            <label for="substancePath">Substance Path</label>
+            <label for="substancePainterPath">Substance Painter Path</label>
             <div class="input-group">
-                <input type="text" id="substancePath"
+                <input type="text" id="substancePainterPath"
                     placeholder="e.g. C:\Program Files\Adobe\Adobe Substance 3D Painter\Adobe Substance 3D Painter.exe">
-                <button type="button" class="browse-btn" id="browseSubstanceBtn">Browse</button>
+                <button type="button" class="browse-btn" id="browseSubstancePainterBtn">Browse</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="pureRefPath">Pure Ref Path</label>
+            <div class="input-group">
+                <input type="text" id="pureRefPath"
+                    placeholder="e.g. C:\Program Files\PureRef\PureRef.exe">
+                <button type="button" class="browse-btn" id="browsePureRefBtn">Browse</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="substanceDesignerPath">Substance Designer Path</label>
+            <div class="input-group">
+                <input type="text" id="substanceDesignerPath"
+                    placeholder="e.g. C:\Program Files\Adobe\Adobe Substance 3D Designer\Adobe Substance 3D Designer.exe">
+                <button type="button" class="browse-btn" id="browseSubstanceDesignerBtn">Browse</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="zbrushPath">Zbrush Path</label>
+            <div class="input-group">
+                <input type="text" id="zbrushPath"
+                    placeholder="e.g. C:\Program Files\Maxon ZBrush\ZBrush.exe">
+                <button type="button" class="browse-btn" id="browseZbrushBtn">Browse</button>
             </div>
         </div>
         <button class="primary-btn" id="saveBtn">Save & Continue</button>
@@ -205,8 +229,17 @@
         const photoshopInput = document.getElementById('photoshopPath');
         const browsePhotoshopBtn = document.getElementById('browsePhotoshopBtn');
 
-        const substanceInput = document.getElementById('substancePath');
-        const browseSubstanceBtn = document.getElementById('browseSubstanceBtn');
+        const substancePainterInput = document.getElementById('substancePainterPath');
+        const browseSubstancePainterBtn = document.getElementById('browseSubstancePainterBtn');
+
+        const pureRefInput = document.getElementById('pureRefPath');
+        const browsePureRefBtn = document.getElementById('browsePureRefBtn');
+
+        const substanceDesignerInput = document.getElementById('substanceDesignerPath');
+        const browseSubstanceDesignerBtn = document.getElementById('browseSubstanceDesignerBtn');
+
+        const zbrushInput = document.getElementById('zbrushPath');
+        const browseZbrushBtn = document.getElementById('browseZbrushBtn');
 
         // Browse for directory
         async function handleBrowse(inputElement) {
@@ -235,7 +268,10 @@
         browseMayaBtn.addEventListener('click', () => handleBrowseFile(mayaInput));
         browseBlenderBtn.addEventListener('click', () => handleBrowseFile(blenderInput));
         browsePhotoshopBtn.addEventListener('click', () => handleBrowseFile(photoshopInput));
-        browseSubstanceBtn.addEventListener('click', () => handleBrowseFile(substanceInput));
+        browseSubstancePainterBtn.addEventListener('click', () => handleBrowseFile(substancePainterInput));
+        browsePureRefBtn.addEventListener('click', () => handleBrowseFile(pureRefInput));
+        browseSubstanceDesignerBtn.addEventListener('click', () => handleBrowseFile(substanceDesignerInput));
+        browseZbrushBtn.addEventListener('click', () => handleBrowseFile(zbrushInput));
 
         // Load existing settings
         async function loadSettings() {
@@ -246,7 +282,10 @@
                 if (settings.mayaPath) mayaInput.value = settings.mayaPath;
                 if (settings.blenderPath) blenderInput.value = settings.blenderPath;
                 if (settings.photoshopPath) photoshopInput.value = settings.photoshopPath;
-                if (settings.substancePath) substanceInput.value = settings.substancePath;
+                if (settings.substancePainterPath) substancePainterInput.value = settings.substancePainterPath;
+                if (settings.pureRefPath) pureRefInput.value = settings.pureRefPath;
+                if (settings.substanceDesignerPath) substanceDesignerInput.value = settings.substanceDesignerPath;
+                if (settings.zbrushPath) zbrushInput.value = settings.zbrushPath;
             } catch (err) {
                 console.error("Failed to load settings:", err);
             }
@@ -258,7 +297,10 @@
             const mayaPath = mayaInput.value.trim();
             const blenderPath = blenderInput.value.trim();
             const photoshopPath = photoshopInput.value.trim();
-            const substancePath = substanceInput.value.trim();
+            const substancePainterPath = substancePainterInput.value.trim();
+            const pureRefPath = pureRefInput.value.trim();
+            const substanceDesignerPath = substanceDesignerInput.value.trim();
+            const zbrushPath = zbrushInput.value.trim();
 
             let hasError = false;
 
@@ -288,7 +330,10 @@
                     mayaPath,
                     blenderPath,
                     photoshopPath,
-                    substancePath
+                    substancePainterPath,
+                    pureRefPath,
+                    substanceDesignerPath,
+                    zbrushPath
                 });
             } catch (err) {
                 console.error("Failed to save settings:", err);

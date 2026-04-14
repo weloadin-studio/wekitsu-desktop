@@ -34,7 +34,10 @@ export function setupSystemIPC() {
             mayaPath: store.get("mayaPath") || "",
             blenderPath: store.get("blenderPath") || "",
             photoshopPath: store.get("photoshopPath") || "",
-            substancePath: store.get("substancePath") || ""
+            substancePainterPath: store.get("substancePainterPath") || "",
+            pureRefPath: store.get("pureRefPath") || "",
+            substanceDesignerPath: store.get("substanceDesignerPath") || "",
+            zbrushPath: store.get("zbrushPath") || ""
         };
     });
 
@@ -43,7 +46,7 @@ export function setupSystemIPC() {
         return linkedTasks;
     });
 
-    ipcMain.handle('save-settings', (event, settings: { wekitsuUrl?: string, workspacePath: string, mayaPath?: string, blenderPath?: string, photoshopPath?: string, substancePath?: string }) => {
+    ipcMain.handle('save-settings', (event, settings: { wekitsuUrl?: string, workspacePath: string, mayaPath?: string, blenderPath?: string, photoshopPath?: string, substancePainterPath?: string, pureRefPath?: string, substanceDesignerPath?: string, zbrushPath?: string }) => {
         let urlChanged = false;
         if (settings.wekitsuUrl !== undefined) {
             if (store.get("wekitsuUrl") !== settings.wekitsuUrl) {
@@ -57,7 +60,10 @@ export function setupSystemIPC() {
         if (settings.mayaPath !== undefined) store.set("mayaPath", settings.mayaPath);
         if (settings.blenderPath !== undefined) store.set("blenderPath", settings.blenderPath);
         if (settings.photoshopPath !== undefined) store.set("photoshopPath", settings.photoshopPath);
-        if (settings.substancePath !== undefined) store.set("substancePath", settings.substancePath);
+        if (settings.substancePainterPath !== undefined) store.set("substancePainterPath", settings.substancePainterPath);
+        if (settings.pureRefPath !== undefined) store.set("pureRefPath", settings.pureRefPath);
+        if (settings.substanceDesignerPath !== undefined) store.set("substanceDesignerPath", settings.substanceDesignerPath);
+        if (settings.zbrushPath !== undefined) store.set("zbrushPath", settings.zbrushPath);
 
         if (appState.settingsWindow) {
             appState.settingsWindow.close();

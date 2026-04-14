@@ -143,7 +143,10 @@
         .app-maya { background-color: #0696D7; }
         .app-blender { background-color: #E87D0D; }
         .app-photoshop { background-color: #31A8FF; color: #001E36; }
-        .app-substance { background-color: #87C540; color: #1e2614; }
+        .app-substance-painter { background-color: #87C540; color: #1e2614; }
+        .app-pure-ref { background-color: #383838; color: #ffffff; }
+        .app-substance-designer { background-color: #E85B2D; color: #ffffff; }
+        .app-zbrush { background-color: #323232; color: #ffffff; }
 
         .empty-state {
             text-align: center;
@@ -202,6 +205,8 @@
         const pathDisplay = document.getElementById('pathDisplay');
         const fileListBody = document.getElementById('fileListBody');
         const emptyState = document.getElementById('emptyState');
+
+        let userSettings = {};
 
         // Path utilities
         function normalizePath(p) {
@@ -276,19 +281,24 @@
                     { key: 'mayaPath', label: 'M', title: 'Maya', className: 'app-maya' },
                     { key: 'blenderPath', label: 'B', title: 'Blender', className: 'app-blender' },
                     { key: 'photoshopPath', label: 'Ps', title: 'Photoshop', className: 'app-photoshop' },
-                    { key: 'substancePath', label: 'Pt', title: 'Substance Painter', className: 'app-substance' }
+                    { key: 'substancePainterPath', label: 'Pt', title: 'Substance Painter', className: 'app-substance-painter' },
+                    { key: 'pureRefPath', label: 'Pr', title: 'Pure Ref', className: 'app-pure-ref' },
+                    { key: 'substanceDesignerPath', label: 'Ds', title: 'Substance Designer', className: 'app-substance-designer' },
+                    { key: 'zbrushPath', label: 'Zb', title: 'Zbrush', className: 'app-zbrush' }
                 ];
 
                 apps.forEach(app => {
-                    const btn = document.createElement('button');
-                    btn.className = `app-icon ${app.className}`;
-                    btn.textContent = app.label;
-                    btn.title = `Open with ${app.title}`;
-                    btn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        openApp(item.path, app.key);
-                    });
-                    actionsDiv.appendChild(btn);
+                    if (userSettings && userSettings[app.key] && userSettings[app.key].trim() !== '') {
+                        const btn = document.createElement('button');
+                        btn.className = `app-icon ${app.className}`;
+                        btn.textContent = app.label;
+                        btn.title = `Open with ${app.title}`;
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            openApp(item.path, app.key);
+                        });
+                        actionsDiv.appendChild(btn);
+                    }
                 });
 
                 tdActions.appendChild(actionsDiv);
@@ -325,7 +335,16 @@
         }
 
         // Initialize
-        loadDirectory(currentPath);
+        async function init() {
+            try {
+                userSettings = await window.electronAPI.getSettings();
+            } catch (err) {
+                console.error("Failed to load settings:", err);
+            }
+            loadDirectory(currentPath);
+        }
+
+        init();
 
     </script>
 </body>
