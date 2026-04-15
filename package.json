@@ -1,7 +1,7 @@
 {
   "name": "wekitsu-desktop",
   "productName": "Wekitsu Desktop",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "wekitsu desktop is an electron wrapper for the web application wekitsu",
   "repository": "weloadin-studio/wekitsu-desktop",
   "node": "22.13.4",
