@@ -32,10 +32,12 @@ export function createUpdateProgressWindow() {
 
 export function setupAutoUpdaterHandlers() {
     autoUpdater.on('checking-for-update', () => {
+        console.log('[Updater] Checking for updates...');
         appState.isCheckingForUpdate = true;
     });
 
     autoUpdater.on('update-available', async (info) => {
+        console.log('[Updater] Update available:', info.version);
         appState.isCheckingForUpdate = false;
         const targetWindow = appState.mainWindow || appState.settingsWindow;
         if (!targetWindow) return;
@@ -55,7 +57,8 @@ export function setupAutoUpdaterHandlers() {
         }
     });
 
-    autoUpdater.on('update-not-available', () => {
+    autoUpdater.on('update-not-available', (info) => {
+        console.log('[Updater] Update not available. Current version:', info.version);
         if (appState.isCheckingForUpdate) {
             appState.isCheckingForUpdate = false;
             const targetWindow = appState.mainWindow || appState.settingsWindow;
@@ -70,12 +73,15 @@ export function setupAutoUpdaterHandlers() {
     });
 
     autoUpdater.on('error', (err) => {
+        console.error('[Updater] Update error:', err);
         appState.isCheckingForUpdate = false;
         if (appState.updateProgressWindow && !appState.updateProgressWindow.isDestroyed()) {
             appState.updateProgressWindow.close();
             appState.updateProgressWindow = null;
         }
 
+        // Only show error dialog if this was a manual check (indicated by isCheckingForUpdate being true initially)
+        // or if we want to always notify. Let's keep it for now but suppress if it's too noisy in background.
         const targetWindow = appState.mainWindow || appState.settingsWindow;
         if (targetWindow) {
             dialog.showMessageBox(targetWindow, {
@@ -91,13 +97,15 @@ export function setupAutoUpdaterHandlers() {
         const percent = Math.floor(progressObj.percent);
         const downloadedBytes = (progressObj.transferred / 1024 / 1024).toFixed(2);
         const totalBytes = (progressObj.total / 1024 / 1024).toFixed(2);
+        console.log(`[Updater] Download progress: ${percent}%`);
 
         if (appState.updateProgressWindow && !appState.updateProgressWindow.isDestroyed()) {
             appState.updateProgressWindow.webContents.send('sync-progress', `Downloading... ${percent}% (${downloadedBytes} MB / ${totalBytes} MB)`);
         }
     });
 
-    autoUpdater.on('update-downloaded', async () => {
+    autoUpdater.on('update-downloaded', async (info) => {
+        console.log('[Updater] Update downloaded:', info.version);
         if (appState.updateProgressWindow && !appState.updateProgressWindow.isDestroyed()) {
             appState.updateProgressWindow.close();
             appState.updateProgressWindow = null;
@@ -122,4 +130,23 @@ export function setupAutoUpdaterHandlers() {
             autoUpdater.quitAndInstall();
         }
     });
+}
+
+export function startUpdateLoop() {
+    // Initial check after 30 seconds
+    setTimeout(() => {
+        console.log('[Updater] Running initial startup update check');
+        autoUpdater.checkForUpdates().catch(err => {
+            console.error('[Updater] Initial check failed:', err);
+        });
+    }, 30000);
+
+    // Periodic check every hour
+    const ONE_HOUR = 60 * 60 * 1000;
+    setInterval(() => {
+        console.log('[Updater] Running periodic 1-hour update check');
+        autoUpdater.checkForUpdates().catch(err => {
+            console.error('[Updater] Periodic check failed:', err);
+        });
+    }, ONE_HOUR);
 }

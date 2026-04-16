@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from "electron";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegStatic from "ffmpeg-static";
-import { setupAutoUpdaterHandlers } from "./core/updater.cjs";
+import { setupAutoUpdaterHandlers, startUpdateLoop } from "./core/updater.cjs";
 import { checkSettingsAndStart } from "./core/windows.cjs";
 import { createMenu } from "./core/menu.cjs";
 import { setupSystemIPC } from "./ipc/system.cjs";
@@ -76,6 +76,7 @@ if (!gotTheLock) {
 
         // Setup interactive update handlers
         setupAutoUpdaterHandlers();
+        startUpdateLoop();
 
         checkSettingsAndStart();
     });
